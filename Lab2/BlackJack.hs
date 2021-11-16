@@ -2,6 +2,7 @@ module BlackJack where
 import Cards
 import RunGame
 import Test.QuickCheck
+import System.Random
 
 --A0
 -----------------------------------------------------------
@@ -35,14 +36,14 @@ display (Add card hand) = show(rank card) ++ " of " ++ show(suit card) ++ "\n" +
 --A2
 --Function for getting the value of a card rank
 --Helper for value
-valueRank :: Rank -> Integer 
+valueRank :: Rank -> Integer
 valueRank Ace = 11
 valueRank (Numeric n) = n
 valueRank rank = 10
 
 --Function for calculating the value of a hand of cards 
 value :: Hand -> Integer
-value hand 
+value hand
     | handValue <= 21 = handValue
     | handValue > 21 = handValue - 10*numberOfAces hand
     where handValue = initialValue hand
@@ -73,11 +74,11 @@ gameOver hand = value hand > 21
 --hand1 is the guest hand
 hand1 = Add (Card (Numeric 4) Hearts)
             (Add (Card Jack Spades) Empty)
-        
+
 -- Function for finding the winner in a game of blackjack 
 --If they tie the bank will win because of gambling
 winner :: Hand -> Hand -> Player
-winner hand1 hand2 
+winner hand1 hand2
     | gameOver hand1 && gameOver hand2      = Bank
     | not(gameOver hand1) && gameOver hand2 = Guest
     | gameOver hand1 && not(gameOver hand2) = Bank
@@ -91,6 +92,51 @@ winner hand1 hand2
 --B1
 
 (<+) :: Hand -> Hand -> Hand
-(<+) Empty h1 = h1
-(<+) h1 Empty = h1
-(<+) Add Card = 
+Empty <+ h1 = h1
+h1 <+ Empty = h1
+h1 <+ Add card h2 = Add card h3
+    where h3 = h1 <+ h2
+
+prop_onTopOf_assoc :: Hand -> Hand -> Hand -> Bool
+prop_onTopOf_assoc p1 p2 p3 =
+    p1<+(p2<+p3) == (p1<+p2)<+p3
+
+prop_size_onTopOf :: Hand -> Hand -> Bool
+prop_size_onTopOf h1 h2 = size h1 + size h2 == size (h1 <+ h2)
+
+----------------------------------------------------------------
+--B2
+createCards :: [Rank] -> Suit -> Hand
+createCards [] s = Empty
+createCards (x:xs) s = Add (Card x s) (createCards xs s)
+
+
+createHand :: Suit -> Hand
+createHand = createCards ([Numeric n | n <- [2..10]] ++ [Jack,Queen,King,Ace])
+
+fullDeck :: Hand
+fullDeck = createHand Hearts <+ createHand Spades <+ createHand Diamonds <+ createHand Clubs
+
+----------------------------------------------------------------
+--B3
+--First arg is deck
+draw :: Hand -> Hand ->(Hand, Hand)
+draw Empty h1 = error "draw: The deck is empty."
+draw (Add c deck) h = (deck, Add c h)
+
+----------------------------------------------------------------
+--B4
+
+playBank :: Hand -> Hand
+playBank deck = playBankHelper deck Empty 
+
+playBankHelper :: Hand -> Hand -> Hand
+playBankHelper deck hand 
+    | value hand < 16 = playBankHelper smallerDeck biggerHand
+    | otherwise = hand
+  where (smallerDeck,biggerHand) = draw deck hand
+
+----------------------------------------------------------------
+--B5
+
+shuffleDeck :: StdGen -> Hand -> Hand

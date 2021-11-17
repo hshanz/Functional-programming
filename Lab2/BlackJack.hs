@@ -128,10 +128,10 @@ draw (Add c deck) h = (deck, Add c h)
 --B4
 
 playBank :: Hand -> Hand
-playBank deck = playBankHelper deck Empty 
+playBank deck = playBankHelper deck Empty
 
 playBankHelper :: Hand -> Hand -> Hand
-playBankHelper deck hand 
+playBankHelper deck hand
     | value hand < 16 = playBankHelper smallerDeck biggerHand
     | otherwise = hand
   where (smallerDeck,biggerHand) = draw deck hand
@@ -139,4 +139,16 @@ playBankHelper deck hand
 ----------------------------------------------------------------
 --B5
 
-shuffleDeck :: StdGen -> Hand -> Hand
+--shuffleDeck :: StdGen -> Hand -> Hand
+--shuffleDeck g
+
+findNthCard :: Integer -> Hand -> Card
+findNthCard 0 (Add card hand) = card
+findNthCard n (Add card hand) = findNthCard (n-1) hand
+
+--Somewhat flips the deck but works
+removeNthCard :: Integer -> Hand -> Hand
+removeNthCard 0 (Add card hand) = hand
+removeNthCard n (Add card hand) =  removeNthCard (n-1) hand <+ Add card Empty
+
+

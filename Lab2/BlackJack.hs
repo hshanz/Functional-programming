@@ -93,8 +93,8 @@ winner hand1 hand2
 (<+) :: Hand -> Hand -> Hand
 Empty <+ h1 = h1
 h1 <+ Empty = h1
-h1 <+ Add card h2 = Add card h3
-    where h3 = h1 <+ h2
+Add card h1 <+ h2 = Add card (h1 <+ h2)
+  
 --prop for checking association for <+ function 
 prop_onTopOf_assoc :: Hand -> Hand -> Hand -> Bool
 prop_onTopOf_assoc p1 p2 p3 =

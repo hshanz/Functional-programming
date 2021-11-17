@@ -3,6 +3,8 @@ import Cards
 import RunGame
 import Test.QuickCheck
 import System.Random
+import Test.QuickCheck.Gen (shuffle)
+import System.IO (putStr)
 
 --A0
 -----------------------------------------------------------
@@ -139,16 +141,27 @@ playBankHelper deck hand
 ----------------------------------------------------------------
 --B5
 
---shuffleDeck :: StdGen -> Hand -> Hand
---shuffleDeck g
+--mkStdGen :: Int -> StdGen
+
+shuffleDeck :: StdGen -> Hand -> Hand
+shuffleDeck g Empty = Empty
+shuffleDeck g d = newDeck
+    where(deck,newDeck) = shuffleHelper g (d,Empty)
+
+shuffleHelper :: StdGen -> (Hand,Hand) -> (Hand,Hand)
+shuffleHelper _ (Empty, nd) = (Empty,nd)
+shuffleHelper g (d,nd) = shuffleHelper g' (deck,newDeck)
+    where (n,g') = randomR(0, size d - 1) g
+          newDeck = nd <+ Add (findNthCard n d) Empty
+          deck = removeNthCard n d
 
 findNthCard :: Integer -> Hand -> Card
 findNthCard 0 (Add card hand) = card
 findNthCard n (Add card hand) = findNthCard (n-1) hand
 
---Somewhat flips the deck but works
+
 removeNthCard :: Integer -> Hand -> Hand
 removeNthCard 0 (Add card hand) = hand
-removeNthCard n (Add card hand) =  removeNthCard (n-1) hand <+ Add card Empty
+removeNthCard n (Add card hand) = Add card (removeNthCard (n-1) hand)
 
 

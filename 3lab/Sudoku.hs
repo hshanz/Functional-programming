@@ -36,14 +36,26 @@ example =
 
 -- | allBlankSudoku is a sudoku with just blanks
 allBlankSudoku :: Sudoku
-allBlankSudoku = 
+allBlankSudoku = Sudoku (replicate 9 (replicate 9 Nothing))
 
 -- * A2
 
 -- | isSudoku sud checks if sud is really a valid representation of a sudoku
 -- puzzle
 isSudoku :: Sudoku -> Bool
-isSudoku = undefined
+isSudoku (Sudoku r) = isSudokuHelper (Sudoku r) && length r == 9
+
+isSudokuHelper :: Sudoku -> Bool 
+isSudokuHelper (Sudoku []) = True
+isSudokuHelper (Sudoku (x:xs)) = (length x == 9) && isRow x && isSudokuHelper (Sudoku xs)
+
+isRow :: Row -> Bool 
+isRow [] = True 
+isRow (x:xs) = isCell x && isRow xs
+
+isCell :: Cell -> Bool 
+isCell Nothing = True
+isCell (Just n) = n <= 9 && n >= 1
 
 -- * A3
 

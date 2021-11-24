@@ -1,6 +1,7 @@
 module Sudoku where
 
 import Test.QuickCheck
+import Data.Char
 
 ------------------------------------------------------------------------------
 
@@ -38,6 +39,8 @@ example =
 allBlankSudoku :: Sudoku
 allBlankSudoku = Sudoku (replicate 9 (replicate 9 Nothing))
 
+allFilled :: Sudoku
+allFilled = Sudoku (replicate 9 (replicate 9 (Just 1)))
 -- * A2
 
 -- | isSudoku sud checks if sud is really a valid representation of a sudoku
@@ -62,7 +65,13 @@ isCell (Just n) = n <= 9 && n >= 1
 -- | isFilled sud checks if sud is completely filled in,
 -- i.e. there are no blanks
 isFilled :: Sudoku -> Bool
-isFilled = undefined
+isFilled (Sudoku [])     = True 
+isFilled (Sudoku (x:xs)) = isFilledHelper x && isFilled (Sudoku xs)
+
+isFilledHelper :: Row -> Bool
+isFilledHelper []           = True 
+isFilledHelper (Nothing:xs) = False 
+isFilledHelper (x:xs)       = isFilledHelper xs
 
 ------------------------------------------------------------------------------
 
@@ -71,7 +80,19 @@ isFilled = undefined
 -- | printSudoku sud prints a nice representation of the sudoku sud on
 -- the screen
 printSudoku :: Sudoku -> IO ()
-printSudoku = undefined
+printSudoku sud =  putStr (printSudHelper sud)
+
+printSudHelper :: Sudoku -> String
+printSudHelper (Sudoku []) = ""
+printSudHelper (Sudoku (x:xs)) = printRows x ++ ['\n'] ++ printSudHelper (Sudoku xs)
+
+printRows :: Row -> String 
+printRows [] = ""
+printRows (x:xs) = cellToChar x : printRows xs
+
+cellToChar :: Cell -> Char 
+cellToChar Nothing = '.'
+cellToChar (Just n) = intToDigit n
 
 -- * B2
 

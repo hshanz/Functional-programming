@@ -2,6 +2,7 @@ module Sudoku where
 
 import Test.QuickCheck
 import Data.Char
+import GHC.Base (IO(IO))
 
 ------------------------------------------------------------------------------
 
@@ -9,7 +10,7 @@ import Data.Char
 type Cell = Maybe Int -- a single cell
 type Row  = [Cell]    -- a row is a list of cells
 
-data Sudoku = Sudoku [Row] 
+data Sudoku = Sudoku [Row]
  deriving ( Show, Eq )
 
 rows :: Sudoku -> [Row]
@@ -48,15 +49,15 @@ allFilled = Sudoku (replicate 9 (replicate 9 (Just 1)))
 isSudoku :: Sudoku -> Bool
 isSudoku (Sudoku r) = isSudokuHelper (Sudoku r) && length r == 9
 
-isSudokuHelper :: Sudoku -> Bool 
+isSudokuHelper :: Sudoku -> Bool
 isSudokuHelper (Sudoku []) = True
 isSudokuHelper (Sudoku (x:xs)) = (length x == 9) && isRow x && isSudokuHelper (Sudoku xs)
 
-isRow :: Row -> Bool 
-isRow [] = True 
+isRow :: Row -> Bool
+isRow [] = True
 isRow (x:xs) = isCell x && isRow xs
 
-isCell :: Cell -> Bool 
+isCell :: Cell -> Bool
 isCell Nothing = True
 isCell (Just n) = n <= 9 && n >= 1
 
@@ -65,12 +66,12 @@ isCell (Just n) = n <= 9 && n >= 1
 -- | isFilled sud checks if sud is completely filled in,
 -- i.e. there are no blanks
 isFilled :: Sudoku -> Bool
-isFilled (Sudoku [])     = True 
+isFilled (Sudoku [])     = True
 isFilled (Sudoku (x:xs)) = isFilledHelper x && isFilled (Sudoku xs)
 
 isFilledHelper :: Row -> Bool
-isFilledHelper []           = True 
-isFilledHelper (Nothing:xs) = False 
+isFilledHelper []           = True
+isFilledHelper (Nothing:xs) = False
 isFilledHelper (x:xs)       = isFilledHelper xs
 
 ------------------------------------------------------------------------------
@@ -86,11 +87,11 @@ printSudHelper :: Sudoku -> String
 printSudHelper (Sudoku []) = ""
 printSudHelper (Sudoku (x:xs)) = printRows x ++ ['\n'] ++ printSudHelper (Sudoku xs)
 
-printRows :: Row -> String 
+printRows :: Row -> String
 printRows [] = ""
 printRows (x:xs) = cellToChar x : printRows xs
 
-cellToChar :: Cell -> Char 
+cellToChar :: Cell -> Char
 cellToChar Nothing = '.'
 cellToChar (Just n) = intToDigit n
 
@@ -99,15 +100,35 @@ cellToChar (Just n) = intToDigit n
 -- | readSudoku file reads from the file, and either delivers it, or stops
 -- if the file did not contain a sudoku
 readSudoku :: FilePath -> IO Sudoku
-readSudoku = undefined
+readSudoku sud = do
+  c <- readFile sud
+  return (Sudoku( convertStringToSud (lines c)))
+
+convertStringToSud :: [String] -> [Row]
+convertStringToSud = map stringToRow
+
+stringToRow :: String -> Row
+stringToRow [] = []
+stringToRow ('.':xs) = [Nothing] ++ stringToRow xs
+stringToRow (x:xs) = [Just (digitToInt x)] ++ stringToRow xs
 
 ------------------------------------------------------------------------------
 
 -- * C1
 
 -- | cell generates an arbitrary cell in a Sudoku
-cell :: Gen (Cell)
-cell = undefined
+cell :: Gen Cell
+cell = frequency [(9, genNothing ), (1,cellNumbers)]
+
+
+cellNumbers :: Gen (Maybe Int)
+cellNumbers = do
+  n <- choose ((1, 9))
+  return (Just n)
+
+genNothing :: Gen (Maybe Int)
+genNothing = return Nothing
+
 
 
 -- * C2
@@ -117,13 +138,13 @@ instance Arbitrary Sudoku where
   arbitrary = undefined
 
  -- hint: get to know the QuickCheck function vectorOf
- 
+
 -- * C3
 
 prop_Sudoku :: Sudoku -> Bool
 prop_Sudoku = undefined
   -- hint: this definition is simple!
-  
+
 ------------------------------------------------------------------------------
 
 type Block = [Cell] -- a Row is also a Cell

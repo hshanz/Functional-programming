@@ -2,8 +2,7 @@ module Sudoku where
 
 import Test.QuickCheck
 import Data.Char
-import GHC.Base (IO(IO))
-
+import Data.List
 ------------------------------------------------------------------------------
 
 -- | Representation of sudoku puzzles (allows some junk)
@@ -130,19 +129,19 @@ genNothing :: Gen (Maybe Int)
 genNothing = return Nothing
 
 
-
 -- * C2
-
 -- | an instance for generating Arbitrary Sudokus
 instance Arbitrary Sudoku where
-  arbitrary = undefined
+  arbitrary = do
+      n <- vectorOf 9 (vectorOf 9 cell)
+      return (Sudoku n)
 
  -- hint: get to know the QuickCheck function vectorOf
 
 -- * C3
 
 prop_Sudoku :: Sudoku -> Bool
-prop_Sudoku = undefined
+prop_Sudoku = isSudoku
   -- hint: this definition is simple!
 
 ------------------------------------------------------------------------------
@@ -153,21 +152,30 @@ type Block = [Cell] -- a Row is also a Cell
 -- * D1
 
 isOkayBlock :: Block -> Bool
-isOkayBlock = undefined
-
+isOkayBlock b = length (filter (/= Nothing) b) == length (nub (filter (/= Nothing) b))
 
 -- * D2
+--block 1 = take 3 
+
 
 blocks :: Sudoku -> [Block]
 blocks = undefined
+
+block :: [Row]-> Int -> Block
+block [] _ = []
+block (x:xs) i = take i (drop (i-3)  x) ++ block xs i    
 
 prop_blocks_lengths :: Sudoku -> Bool
 prop_blocks_lengths = undefined
 
 -- * D3
+blocksToOkay :: [Block] -> Bool
+blocksToOkay [] = True
+blocksToOkay (x:xs) = isOkayBlock x && blocksToOkay xs
 
+-- Did not have time to implement the 3x3 blocks
 isOkay :: Sudoku -> Bool
-isOkay = undefined
+isOkay (Sudoku s) = blocksToOkay (s ++ transpose s)
 
 
 ---- Part A ends here --------------------------------------------------------

@@ -46,11 +46,8 @@ allFilled = Sudoku (replicate 9 (replicate 9 (Just 1)))
 -- | isSudoku sud checks if sud is really a valid representation of a sudoku
 -- puzzle
 isSudoku :: Sudoku -> Bool
-isSudoku (Sudoku r) = isSudokuHelper (Sudoku r) && length r == 9
+isSudoku (Sudoku r) = length r == 9 && all isCell (concat r)
 
-isSudokuHelper :: Sudoku -> Bool
-isSudokuHelper (Sudoku []) = True
-isSudokuHelper (Sudoku (x:xs)) = (length x == 9) && isRow x && isSudokuHelper (Sudoku xs)
 
 isRow :: Row -> Bool
 isRow [] = True
@@ -87,8 +84,7 @@ printSudHelper (Sudoku []) = ""
 printSudHelper (Sudoku (x:xs)) = printRows x ++ ['\n'] ++ printSudHelper (Sudoku xs)
 
 printRows :: Row -> String
-printRows [] = ""
-printRows (x:xs) = cellToChar x : printRows xs
+printRows = map cellToChar
 
 cellToChar :: Cell -> Char
 cellToChar Nothing = '.'
@@ -109,7 +105,8 @@ convertStringToSud = map stringToRow
 stringToRow :: String -> Row
 stringToRow [] = []
 stringToRow ('.':xs) = [Nothing] ++ stringToRow xs
-stringToRow (x:xs) = [Just (digitToInt x)] ++ stringToRow xs
+stringToRow (x:xs) | isDigit x = [Just (digitToInt x)] ++ stringToRow xs
+                   | otherwise = error "Not valid"
 
 ------------------------------------------------------------------------------
 
@@ -159,11 +156,19 @@ isOkayBlock b = length (filter (/= Nothing) b) == length (nub (filter (/= Nothin
 
 
 blocks :: Sudoku -> [Block]
-blocks = undefined
+blocks (Sudoku r ) =  createBlock (block r 3) ++ 
+                      createBlock (block r 6) ++ 
+                      createBlock (block r 9)  
+
+test :: Sudoku -> Block
+test (Sudoku s) = block s 9
 
 block :: [Row]-> Int -> Block
 block [] _ = []
-block (x:xs) i = take i (drop (i-3)  x) ++ block xs i    
+block (x:xs) i = drop (i-3) (take i  x) ++ block xs i
+
+createBlock :: Block -> [Block]
+createBlock b  = [take 9 b] ++ [take 9 (drop 9 b)] ++ [drop 18 b]
 
 prop_blocks_lengths :: Sudoku -> Bool
 prop_blocks_lengths = undefined
@@ -171,11 +176,11 @@ prop_blocks_lengths = undefined
 -- * D3
 blocksToOkay :: [Block] -> Bool
 blocksToOkay [] = True
-blocksToOkay (x:xs) = isOkayBlock x && blocksToOkay xs
+blocksToOkay (x:xs) = isOkayBlock x && blocksToOkay xs 
 
 -- Did not have time to implement the 3x3 blocks
 isOkay :: Sudoku -> Bool
-isOkay (Sudoku s) = blocksToOkay (s ++ transpose s)
+isOkay (Sudoku s) = blocksToOkay (s ++ transpose s ++ blocks (Sudoku s))
 
 
 ---- Part A ends here --------------------------------------------------------

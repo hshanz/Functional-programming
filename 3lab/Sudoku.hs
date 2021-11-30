@@ -48,11 +48,6 @@ allFilled = Sudoku (replicate 9 (replicate 9 (Just 1)))
 isSudoku :: Sudoku -> Bool
 isSudoku (Sudoku r) = length r == 9 && all isCell (concat r)
 
-
-isRow :: Row -> Bool
-isRow [] = True
-isRow (x:xs) = isCell x && isRow xs
-
 isCell :: Cell -> Bool
 isCell Nothing = True
 isCell (Just n) = n <= 9 && n >= 1
@@ -152,16 +147,12 @@ isOkayBlock :: Block -> Bool
 isOkayBlock b = length (filter (/= Nothing) b) == length (nub (filter (/= Nothing) b))
 
 -- * D2
---block 1 = take 3 
-
-
 blocks :: Sudoku -> [Block]
 blocks (Sudoku r ) =  createBlock (block r 3) ++ 
                       createBlock (block r 6) ++ 
-                      createBlock (block r 9)  
-
-test :: Sudoku -> Block
-test (Sudoku s) = block s 9
+                      createBlock (block r 9) 
+                      ++ r 
+                      ++ transpose r
 
 block :: [Row]-> Int -> Block
 block [] _ = []
@@ -171,16 +162,13 @@ createBlock :: Block -> [Block]
 createBlock b  = [take 9 b] ++ [take 9 (drop 9 b)] ++ [drop 18 b]
 
 prop_blocks_lengths :: Sudoku -> Bool
-prop_blocks_lengths = undefined
+prop_blocks_lengths s  = length (blocks s) == 27 &&  
+                         all (==9) (map length (blocks s)) 
 
 -- * D3
-blocksToOkay :: [Block] -> Bool
-blocksToOkay [] = True
-blocksToOkay (x:xs) = isOkayBlock x && blocksToOkay xs 
-
--- Did not have time to implement the 3x3 blocks
 isOkay :: Sudoku -> Bool
-isOkay (Sudoku s) = blocksToOkay (s ++ transpose s ++ blocks (Sudoku s))
+isOkay s = all isOkayBlock (blocks s)
+
 
 
 ---- Part A ends here --------------------------------------------------------

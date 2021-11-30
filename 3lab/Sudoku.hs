@@ -183,28 +183,36 @@ type Pos = (Int,Int)
 -- * E1
 
 blanks :: Sudoku -> [Pos]
-blanks = undefined
+blanks (Sudoku s) = [(r,c) | (r, row) <- zip [0..] s,
+                             (c,cell) <- zip [0..] row, 
+                             cell == Nothing]
 
---prop_blanks_allBlanks :: ...
---prop_blanks_allBlanks =
+prop_blanks_allBlanks :: Bool
+prop_blanks_allBlanks = length ( blanks allBlankSudoku )== 81 
 
 
 -- * E2
 
 (!!=) :: [a] -> (Int,a) -> [a]
-xs !!= (i,y) = undefined
+[] !!= (i,y) = []
+xs !!= (i,y) 
+          | length xs < i = error "index out of bounds" 
+          | otherwise = hs ++ [y] ++ tail ls 
+        where (hs,ls) = splitAt i xs
 
---prop_bangBangEquals_correct :: ...
---prop_bangBangEquals_correct =
-
-
+prop_bangBangEquals_correct ::(Eq a) => [a] -> (Int,a) -> Bool
+prop_bangBangEquals_correct xs (i,y) = undefined
+                    
 -- * E3
 
 update :: Sudoku -> Pos -> Cell -> Sudoku
-update = undefined
+update (Sudoku s) (i,j) n = Sudoku(xs ++ [xc] ++ tail xl)
+                  where xc = head xl !!= (j,n) 
+                        (xs, xl) = splitAt i s  
+                        
 
---prop_update_updated :: ...
---prop_update_updated =
+prop_update_updated :: Sudoku -> Pos -> Cell -> Bool
+prop_update_updated  sud (i,j) n = rows (update sud (i,j) n) !! i !! j == n 
 
 
 ------------------------------------------------------------------------------

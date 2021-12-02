@@ -148,11 +148,10 @@ isOkayBlock b = length (filter (/= Nothing) b) == length (nub (filter (/= Nothin
 
 -- * D2
 blocks :: Sudoku -> [Block]
-blocks (Sudoku r ) =  createBlock (block r 3) ++ 
-                      createBlock (block r 6) ++ 
-                      createBlock (block r 9) 
-                      ++ r 
-                      ++ transpose r
+blocks (Sudoku r) = concat (map createBlock [(block r x) | x <-[3*n | n <-[1..3]]])
+                  ++ transpose r ++ r 
+
+
 
 block :: [Row]-> Int -> Block
 block [] _ = []

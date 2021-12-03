@@ -3,6 +3,7 @@ module Sudoku where
 import Test.QuickCheck
 import Data.Char
 import Data.List
+import Data.Maybe
 ------------------------------------------------------------------------------
 
 -- | Representation of sudoku puzzles (allows some junk)
@@ -217,8 +218,24 @@ prop_update_updated  sud (i,j) n = rows (update sud (i,j) n) !! i !! j == n
 ------------------------------------------------------------------------------
 
 -- * F1
+solve :: Sudoku -> Maybe Sudoku
+solve sud = solve' sud (blanks sud)
 
+solve' :: Sudoku -> [Pos] -> Maybe Sudoku
+solve' sud []   | isOkay sud && isFilled sud = Just sud
+                | otherwise = Nothing
+solve' sud (x:xs) =  head' [(solve' (update sud x (Just n)) xs) | n <- validUpdates sud x] 
 
+head' :: [Maybe Sudoku] -> Maybe Sudoku
+head' (Nothing:xs) = head' xs
+head' ((Just n):xs) = Just n
+head' [] = Nothing 
+
+validUpdates :: Sudoku -> Pos -> [Int]
+validUpdates sud pos = filter (validUpdatesHelper sud pos) [1..9]
+
+validUpdatesHelper :: Sudoku -> Pos -> Int -> Bool
+validUpdatesHelper sud pos i = isOkay(update sud pos (Just i)) 
 -- * F2
 
 

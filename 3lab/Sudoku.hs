@@ -149,8 +149,8 @@ isOkayBlock b = length (filter (/= Nothing) b) == length (nub (filter (/= Nothin
 
 -- * D2
 blocks :: Sudoku -> [Block]
-blocks (Sudoku r) = concat (map createBlock [(block r x) | x <-[3*n | n <-[1..3]]])
-                  ++ transpose r ++ r 
+blocks (Sudoku r) = concat ([createBlock (block r x) | x <- [3 * n | n <- [1 .. 3]]])
+                  ++ transpose r ++ r
 
 
 
@@ -162,8 +162,8 @@ createBlock :: Block -> [Block]
 createBlock b  = [take 9 b] ++ [take 9 (drop 9 b)] ++ [drop 18 b]
 
 prop_blocks_lengths :: Sudoku -> Bool
-prop_blocks_lengths s  = length (blocks s) == 27 &&  
-                         all (==9) (map length (blocks s)) 
+prop_blocks_lengths s  = length (blocks s) == 27 &&
+                         all (==9) (map length (blocks s))
 
 -- * D3
 isOkay :: Sudoku -> Bool
@@ -184,11 +184,11 @@ type Pos = (Int,Int)
 
 blanks :: Sudoku -> [Pos]
 blanks (Sudoku s) = [(r,c) | (r, row) <- zip [0..] s,
-                             (c,cell) <- zip [0..] row, 
+                             (c,cell) <- zip [0..] row,
                              cell == Nothing]
 
 prop_blanks_allBlanks :: Bool
-prop_blanks_allBlanks = length ( blanks allBlankSudoku )== 81 
+prop_blanks_allBlanks = length ( blanks allBlankSudoku )== 81
 
 
 -- * E2
@@ -208,9 +208,9 @@ prop_bangBangEquals_correct row (i,c) = (row !!=(i',c)!!i') == c
 
 update :: Sudoku -> Pos -> Cell -> Sudoku
 update (Sudoku s) (i,j) n = Sudoku(xs ++ [xc] ++ tail xl)
-                  where xc = head xl !!= (j,n) 
-                        (xs, xl) = splitAt i s  
-                        
+                  where xc = head xl !!= (j,n)
+                        (xs, xl) = splitAt i s
+
 
 prop_update_updated :: Sudoku -> Pos -> Cell -> Bool
 prop_update_updated sud (i,j) n = rows (update sud (i',j') n) !! i' !! j' == n 
@@ -227,22 +227,36 @@ solve sud = solve' sud (blanks sud)
 solve' :: Sudoku -> [Pos] -> Maybe Sudoku
 solve' sud []   | isOkay sud && isFilled sud = Just sud
                 | otherwise = Nothing
-solve' sud (x:xs) =  head' [(solve' (update sud x (Just n)) xs) | n <- validUpdates sud x] 
+solve' sud (x:xs) =  head' [(solve' (update sud x (Just n)) xs) | n <- validUpdates sud x]
 
 head' :: [Maybe Sudoku] -> Maybe Sudoku
 head' (Nothing:xs) = head' xs
 head' ((Just n):xs) = Just n
-head' [] = Nothing 
+head' [] = Nothing
 
 validUpdates :: Sudoku -> Pos -> [Int]
 validUpdates sud pos = filter (validUpdatesHelper sud pos) [1..9]
 
 validUpdatesHelper :: Sudoku -> Pos -> Int -> Bool
-validUpdatesHelper sud pos i = isOkay(update sud pos (Just i)) 
--- * F2
+validUpdatesHelper sud pos i = isOkay(update sud pos (Just i))
 
+-- * F2
+readAndSolve :: FilePath -> IO ()
+readAndSolve f = do
+          s <- readSudoku f
+          printSudoku(fromJust(solve s))
 
 -- * F3
+isSolutionOf :: Sudoku -> Sudoku -> Bool
+isSolutionOf s1 s2 = isOkay s1 && isFilled s1 && blanksTest s1 (blanks s2) == s2
 
+blanksTest :: Sudoku -> [Pos] -> Sudoku
+blanksTest s   []   = s 
+blanksTest s (x:xs) = blanksTest (update s x Nothing) xs 
 
 -- * F4
+prop_SolveSound :: Sudoku -> Property
+prop_SolveSound s = isJust (solve s) ==> fromJust (solve s) `isSolutionOf` s 
+
+fewerChecks prop =
+  quickCheckWith stdArgs{maxSuccess=30 } prop

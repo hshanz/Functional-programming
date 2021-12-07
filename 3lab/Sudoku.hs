@@ -194,14 +194,15 @@ prop_blanks_allBlanks = length ( blanks allBlankSudoku )== 81
 -- * E2
 
 (!!=) :: [a] -> (Int,a) -> [a]
-[] !!= (i,y) = []
+[] !!= (i,y) = [y]
 xs !!= (i,y) 
           | length xs < i = error "index out of bounds" 
           | otherwise = hs ++ [y] ++ tail ls 
         where (hs,ls) = splitAt i xs
 
-prop_bangBangEquals_correct ::(Eq a) => [a] -> (Int,a) -> Bool
-prop_bangBangEquals_correct xs (i,y) = undefined
+prop_bangBangEquals_correct :: Row -> (Int,Cell) -> Bool
+prop_bangBangEquals_correct row (i,c) = (row !!=(i',c)!!i') == c
+                                      where i' = abs (i `mod` (length (row) + 1))
                     
 -- * E3
 
@@ -212,7 +213,9 @@ update (Sudoku s) (i,j) n = Sudoku(xs ++ [xc] ++ tail xl)
                         
 
 prop_update_updated :: Sudoku -> Pos -> Cell -> Bool
-prop_update_updated  sud (i,j) n = rows (update sud (i,j) n) !! i !! j == n 
+prop_update_updated sud (i,j) n = rows (update sud (i',j') n) !! i' !! j' == n 
+                                where i' = abs (i `mod` 9)
+                                      j' = abs (j `mod` 9)
 
 
 ------------------------------------------------------------------------------

@@ -222,7 +222,8 @@ prop_update_updated sud (i,j) n = rows (update sud (i',j') n) !! i' !! j' == n
 
 -- * F1
 solve :: Sudoku -> Maybe Sudoku
-solve sud = solve' sud (blanks sud)
+solve sud |isSudoku sud = solve' sud (blanks sud)
+          | otherwise = Nothing
 
 solve' :: Sudoku -> [Pos] -> Maybe Sudoku
 solve' sud []   | isOkay sud && isFilled sud = Just sud
@@ -244,7 +245,9 @@ validUpdatesHelper sud pos i = isOkay(update sud pos (Just i))
 readAndSolve :: FilePath -> IO ()
 readAndSolve f = do
           s <- readSudoku f
-          printSudoku(fromJust(solve s))
+          if solve s == Nothing 
+            then putStrLn "No solution"
+          else printSudoku(fromJust(solve s))
 
 -- * F3
 isSolutionOf :: Sudoku -> Sudoku -> Bool

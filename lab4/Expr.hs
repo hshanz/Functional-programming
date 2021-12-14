@@ -1,4 +1,4 @@
-
+import Parsing
 data Expr
     = Num Double
     | Add Expr Expr
@@ -62,13 +62,11 @@ eval (Mul exp1 exp2) d = (evalFactor exp1 d) * (evalFactor exp2 d)
 eval (Sin exp) d       = sin (eval exp d)
 eval (Cos exp) d       = cos (eval exp d)
 
-expr, term, factor :: Parser Expr
 
-expr    = do
-        t <- term
-        ts <- zeroOrMore (do char '+'; term)
-        return foldl (Add t ts) 
-term = undefined
-factor = undefined
+expr, term, factor, funSin :: Parser Expr
+expr     = foldl1 Add <$> chain term (char '+')
+term     = foldl1 Mul <$> chain factor (char '*')
+funSin   = foldl1 Sin <$> chain factor (char 's')
+factor   = Num <$> readsP <|>  char '(' *> expr <* char ')'
 
-readStr :: String -> Maybe Expr
+--readStr :: String -> Maybe Expr

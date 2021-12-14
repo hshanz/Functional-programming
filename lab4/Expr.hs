@@ -1,4 +1,7 @@
 import Parsing
+import Data.Char
+import Data.Maybe
+import Test.QuickCheck
 data Expr
     = Num Double
     | Add Expr Expr
@@ -18,7 +21,7 @@ add' :: Expr -> Expr -> Expr
 add' exp1 exp2 = Add exp1 exp2
 
 mul' :: Expr -> Expr -> Expr
-mul' exp1 exp2 = Mul exp1 exp2
+mul' exp1 exp2 = Mul exp1 exp2  
 
 sin' :: Expr -> Expr
 sin' expr = Sin expr
@@ -64,9 +67,79 @@ eval (Cos exp) d       = cos (eval exp d)
 
 
 expr, term, factor, funSin :: Parser Expr
-expr     = foldl1 Add <$> chain term (char '+')
+expr     = foldl1 Add <$> chain term (char '+')      
 term     = foldl1 Mul <$> chain factor (char '*')
-funSin   = foldl1 Sin <$> chain factor (char 's')
-factor   = Num <$> readsP <|>  char '(' *> expr <* char ')'
 
---readStr :: String -> Maybe Expr
+funSin   = do
+            char 's'
+            char 'i'
+            char 'n'
+            Sin <$> factor
+funCos   = do
+            char 'c'
+            char 'o'
+            char 's'
+            Cos <$> factor
+varX     = do
+            char 'x'
+            return X
+factor   = Num <$> readsP 
+  <|> funCos
+  <|> funSin
+  <|> do
+  char '(' *> expr <* char ')'
+
+readStr :: String -> Maybe Expr
+readStr s = Just (fst (fromJust (parse expr (filter (not.isSpace) s))))
+        
+prop_ShowReadExpr :: Expr -> Bool
+prop_ShowReadExpr exp = exp == fromJust (readStr (showExpr exp))
+
+
+genNum   :: Gen Expr
+genNum = do
+         x <- arbitrary
+         return (Num x)
+
+simplify :: Expr -> Expr
+simplify (Num n) = Num n
+simplify X = X
+
+simplify (Add (Num 0) expr)            = simplify expr
+simplify (Add expr (Num 0))            = simplify expr
+simplify (Add (Num n1) (Num n2))       = Num (n1 + n2)
+simplify (Add expr X)                 = Add (simplify expr) X
+simplify (Add X expr)                 = Add (simplify expr) X
+simplify (Add expr1 expr2)             = simplify (Add (simplify expr1) (simplify expr2))
+
+
+simplify (Mul expr (Num 0))            = Num 0
+simplify (Mul (Num 0) expr)            = Num 0
+simplify (Mul (Num 1) expr)            = simplify expr
+simplify (Mul expr (Num 1))            = simplify expr
+simplify (Mul expr X)                  = Mul (simplify expr) X
+simplify (Mul X expr)                  = Mul (simplify expr) X
+simplify (Mul (Num n1) (Num n2))       = Num (n1 * n2)
+simplify (Mul expr1 expr2)             = simplify (Mul (simplify expr1) (simplify expr2))
+
+
+simplify (Sin (Num n))                 = Num (sin n) 
+simplify (Cos (Num n))                 = Num (cos n)
+simplify (Sin (expr))                  = simplify (Sin (simplify expr))
+simplify (Cos (expr))                  = simplify (Cos (simplify expr))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

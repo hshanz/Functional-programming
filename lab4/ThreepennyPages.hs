@@ -14,6 +14,7 @@ import Graphics.UI.Threepenny.Core      as UI
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Canvas    as UI
 import qualified Data.Aeson             as JSON
+import GHC.Base (undefined)
 
 -- | @mkInput width init@ makes an input element with the specified width and
 -- initial text
@@ -94,3 +95,5 @@ path color (p:ps) c = do c # set' strokeStyle color
                          sequence_ [lineTo p c|p<-ps]
                          c # stroke
 path _ _ _ = return ()
+
+

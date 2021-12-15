@@ -122,7 +122,45 @@ arbOp e1 e2  = do e1' <- e1
 instance Arbitrary Expr where
     arbitrary = sized arbExpr
 
-    --   -475.77975142772766
+
+simplify :: Expr -> Expr
+simplify (Num n) = Num n
+simplify X = X
+
+simplify (Add (Num 0) expr)         = simplify expr
+simplify (Add expr (Num 0))         = simplify expr
+simplify (Add (Num n1) (Num n2))    = Num (n1 + n2)
+simplify (Add expr X)               = (Add (simplify expr) X)
+simplify (Add X expr)               = (Add (simplify expr) X)
+simplify (Add expr1 expr2)          =  (Add (simplify expr1) (simplify expr2))
+
+simplify (Mul expr (Num 0))         = Num 0
+simplify (Mul (Num 0) expr)         = Num 0
+simplify (Mul (Num 1) expr)         = simplify expr
+simplify (Mul expr (Num 1))         = simplify expr
+simplify (Mul expr X)               = Mul (simplify expr) X
+simplify (Mul X expr)               = Mul (simplify expr) X
+simplify (Mul (Num n1) (Num n2))    = Num (n1 * n2)
+simplify (Mul expr1 expr2)          = simplify (Mul (simplify expr1) (simplify expr2))
+
+simplify (Sin (Num n))              = Num (sin n) 
+simplify (Cos (Num n))              = Num (cos n)
+simplify (Sin (expr))               = simplify (Sin (simplify expr))
+simplify (Cos (expr))               = simplify (Cos (simplify expr))
 
 differentiate :: Expr -> Expr
-differentiate = undefined 
+differentiate (Add (Num n) (Num n2)) = Num 0
+differentiate (Add X (Num n2))       = Num 1
+differentiate (Add (Num n2) X)       = Num 1
+differentiate (Add X X)              = Num 2
+differentiate (Add expr X)           = simplify (Add expr (Num 1))
+differentiate (Add X expr)           = simplify (Add expr (Num 1))
+differentiate (Add expr1 expr2)      = differentiate (simplify (Add (expr1) (expr2)))
+
+differentiate (Mul (Num n) (Num n2)) = simplify (Num 0)
+differentiate (Mul X (Num n))        = Num n
+differentiate (Mul (Num n) X)        = Num n
+differentiate (Mul X X)              = Mul X (Num 2)
+differentiate (Mul expr X)           = simplify expr
+differentiate (Mul X expr)           = simplify expr
+differentiate (Mul expr1 expr2)      = differentiate (simplify (Mul expr1 expr2))

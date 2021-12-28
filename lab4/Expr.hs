@@ -17,17 +17,17 @@ num n = Num n
 x :: Expr
 x = X
 
-add' :: Expr -> Expr -> Expr
-add' exp1 exp2 = Add exp1 exp2
+add :: Expr -> Expr -> Expr
+add exp1 exp2 = Add exp1 exp2
 
-mul' :: Expr -> Expr -> Expr
-mul' exp1 exp2 = Mul exp1 exp2  
+mul :: Expr -> Expr -> Expr
+mul exp1 exp2 = Mul exp1 exp2  
 
-sin' :: Expr -> Expr
-sin' expr = Sin expr
+sin :: Expr -> Expr
+sin expr = Sin expr
 
-cos' :: Expr -> Expr
-cos' expr = Cos expr
+cos :: Expr -> Expr
+cos expr = Cos expr
 
 size :: Expr -> Int
 size X = 0
@@ -51,7 +51,7 @@ showExpr (Add exp1 exp2) = showExpr exp1 ++ " + " ++ showExpr exp2
 showExpr (Mul exp1 exp2) = showMul exp1 ++ "*" ++ showExpr exp2
 showExpr (Sin exp)       = "sin " ++ showFunc exp
 showExpr (Cos exp)       = "cos " ++ showFunc exp 
-showExpr (X)        = "x"
+showExpr (X)             = "x"
 
 evalFactor :: Expr -> Double -> Double
 evalFactor (Add exp1 exp2) d = (eval exp1 d) + (eval exp2 d)
@@ -62,8 +62,8 @@ eval X d = d
 eval (Num n) d = n
 eval (Add exp1 exp2) d = (eval exp1 d) + (eval exp2 d)
 eval (Mul exp1 exp2) d = (evalFactor exp1 d) * (evalFactor exp2 d)
-eval (Sin exp) d       = sin (eval exp d)
-eval (Cos exp) d       = cos (eval exp d)
+eval (Sin exp) d       = Prelude.sin (eval exp d)
+eval (Cos exp) d       = Prelude.cos (eval exp d)
 
 
 expr, term, factor, funSin :: Parser Expr
@@ -110,7 +110,7 @@ simplify (Add expr (Num 0))         = simplify expr
 simplify (Add (Num n1) (Num n2))    = Num (n1 + n2)
 simplify (Add expr X)               = (Add (simplify expr) X)
 simplify (Add X expr)               = (Add (simplify expr) X)
-simplify (Add expr1 expr2)          =  (Add (simplify expr1) (simplify expr2))
+simplify (Add expr1 expr2)          = (Add (simplify expr1) (simplify expr2))
 
 simplify (Mul expr (Num 0))         = Num 0
 simplify (Mul (Num 0) expr)         = Num 0
@@ -121,27 +121,35 @@ simplify (Mul X expr)               = Mul (simplify expr) X
 simplify (Mul (Num n1) (Num n2))    = Num (n1 * n2)
 simplify (Mul expr1 expr2)          = simplify (Mul (simplify expr1) (simplify expr2))
 
-simplify (Sin (Num n))              = Num (sin n) 
-simplify (Cos (Num n))              = Num (cos n)
+simplify (Sin (Num n))              = Num (Prelude.sin n) 
+simplify (Cos (Num n))              = Num (Prelude.cos n)
 simplify (Sin (expr))               = simplify (Sin (simplify expr))
 simplify (Cos (expr))               = simplify (Cos (simplify expr))
 
 differentiate :: Expr -> Expr
-differentiate (Add (Num n) (Num n2)) = Num 0
-differentiate (Add X (Num n2))       = Num 1
-differentiate (Add (Num n2) X)       = Num 1
-differentiate (Add X X)              = Num 2
-differentiate (Add expr X)           = simplify (Add expr (Num 1))
-differentiate (Add X expr)           = simplify (Add expr (Num 1))
-differentiate (Add expr1 expr2)      = differentiate (simplify (Add (expr1) (expr2)))
+differentiate expr = simplify (differentiate' (simplify expr))
 
-differentiate (Mul (Num n) (Num n2)) = simplify (Num 0)
-differentiate (Mul X (Num n))        = Num n
-differentiate (Mul (Num n) X)        = Num n
-differentiate (Mul X X)              = Mul X (Num 2)
-differentiate (Mul expr X)           = simplify expr
-differentiate (Mul X expr)           = simplify expr
-differentiate (Mul expr1 expr2)      = differentiate (simplify (Mul expr1 expr2))
+differentiate' :: Expr -> Expr
+
+--Addition Rule
+differentiate' (Add expr1 expr2)           = (Add (differentiate' expr1) (differentiate' expr1))
+
+--Product Rule
+differentiate' (Mul expr1 expr2)           = (Add (Mul expr1 (differentiate' expr2)) (Mul expr2 (differentiate' expr1)))
+
+--Sin rule
+differentiate' (Sin expr)          = (Mul (differentiate' expr) (Cos (expr)))
+
+--Cos rule
+differentiate' (Cos expr)          = Mul (Mul (differentiate' expr) (Sin (expr))) (Num (-1))
+
+--Derivate of number is 0
+differentiate' (Num n)             = Num 0
+
+--Derivate of X is 1
+differentiate' (X)                 = Num 1
+
+
 
 
 

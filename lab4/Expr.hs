@@ -1,3 +1,4 @@
+module Expr where
 import Parsing
 import Data.Char
 import Data.Maybe
@@ -71,35 +72,38 @@ eval (Sin exp) d       = Prelude.sin (eval exp d)
 eval (Cos exp) d       = Prelude.cos (eval exp d)
 
 
-expr, term, factor, funSin :: Parser Expr
-expr     = foldl1 Add <$> chain term (char '+')      
+expr, term, factor,funSin,funCos,varX :: Parser Expr
+expr     = foldl1 Add <$> chain term (char '+')
 term     = foldl1 Mul <$> chain factor (char '*')
-
-funSin   = do
+funSin   =  do
             char 's'
             char 'i'
             char 'n'
             Sin <$> factor
-funCos   = do
+funCos  = do
             char 'c'
             char 'o'
             char 's'
             Cos <$> factor
-varX     = do
+varX = do
             char 'x'
             return X
-factor   = Num <$> readsP 
-  <|> funCos
-  <|> funSin
-  <|> do
-  char '(' *> expr <* char ')'
+factor = Num <$> readsP
+        <|> funSin
+        <|> funCos
+        <|> varX
+        <|> do
+            char '('
+            e <- expr
+            char ')'
+            return e
 
-readStr :: String -> Maybe Expr
-readStr s = Just (fst (fromJust (parse expr (filter (not.isSpace) s))))
+readExpr :: String -> Maybe Expr
+readExpr s = Just (fst (fromJust (parse expr (filter (not.isSpace) s))))
         
 prop_ShowReadExpr :: Expr -> Bool
 prop_ShowReadExpr exp = x <= 0.000001 && x >= (-0.000001)
-                        where x = eval exp 1 - eval (fromJust (readStr (showExpr exp))) 1
+                        where x = eval exp 1 - eval (fromJust (readExpr (showExpr exp))) 1
 
 
 

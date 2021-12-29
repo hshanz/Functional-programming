@@ -97,8 +97,9 @@ factor   = Num <$> readsP
 readStr :: String -> Maybe Expr
 readStr s = Just (fst (fromJust (parse expr (filter (not.isSpace) s))))
         
-prop_ShowReadExpr :: Expr -> Double -> Bool
-prop_ShowReadExpr exp d = eval exp d == eval (fromJust (readStr (showExpr exp))) d
+prop_ShowReadExpr :: Expr -> Bool
+prop_ShowReadExpr exp = x <= 0.000001 && x >= (-0.000001)
+                        where x = eval exp 1 - eval (fromJust (readStr (showExpr exp))) 1
 
 
 

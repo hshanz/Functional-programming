@@ -46,9 +46,10 @@ showFunc (Mul exp1 exp2) = "(" ++ "(" ++ showExpr exp1 ++ ")" ++ "*" ++ "(" ++ s
 showFunc (Sin exp)      = "(" ++ "sin " ++ "(" ++ showExpr exp ++ ")" ++ ")"
 showFunc (Cos exp)      = "(" ++ "cos" ++ "(" ++ showExpr exp ++ ")" ++ ")"
 showFunc exp = showExpr exp
+
 showExpr :: Expr -> String
 showExpr (Num n) = show n
-showExpr (Mul (Add exp1 exp2) exp)  = showMul (Add exp1 exp2) ++ "*" ++showExpr exp 
+showExpr (Mul (Add exp1 exp2) exp)  = showMul (Add exp1 exp2) ++ "*" ++showMul exp 
 showExpr (Mul exp (Add exp1 exp2))  = showMul exp ++ "*" ++ showMul (Add exp1 exp2)
 showExpr (Add exp1 exp2) = showExpr exp1 ++ " + " ++ showExpr exp2
 showExpr (Mul exp1 exp2) = showMul exp1 ++ "*" ++ showExpr exp2

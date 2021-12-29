@@ -46,11 +46,9 @@ showFunc (Mul exp1 exp2) = "(" ++ "(" ++ showExpr exp1 ++ ")" ++ "*" ++ "(" ++ s
 showFunc (Sin exp)      = "(" ++ "sin " ++ "(" ++ showExpr exp ++ ")" ++ ")"
 showFunc (Cos exp)      = "(" ++ "cos" ++ "(" ++ showExpr exp ++ ")" ++ ")"
 showFunc exp = showExpr exp
-
-
 showExpr :: Expr -> String
 showExpr (Num n) = show n
-showExpr (Mul (Add exp1 exp2) exp)  = showMul (Add exp1 exp2) ++ "*" ++showMul exp 
+showExpr (Mul (Add exp1 exp2) exp)  = showMul (Add exp1 exp2) ++ "*" ++showExpr exp 
 showExpr (Mul exp (Add exp1 exp2))  = showMul exp ++ "*" ++ showMul (Add exp1 exp2)
 showExpr (Add exp1 exp2) = showExpr exp1 ++ " + " ++ showExpr exp2
 showExpr (Mul exp1 exp2) = showMul exp1 ++ "*" ++ showExpr exp2
@@ -98,8 +96,8 @@ factor   = Num <$> readsP
 readStr :: String -> Maybe Expr
 readStr s = Just (fst (fromJust (parse expr (filter (not.isSpace) s))))
         
-prop_ShowReadExpr :: Expr -> Bool
-prop_ShowReadExpr exp = simplify exp  == simplify (fromJust (readStr (showExpr exp))) 
+prop_ShowReadExpr :: Expr -> Double -> Bool
+prop_ShowReadExpr exp d = eval exp d == eval (fromJust (readStr (showExpr exp))) d
 
 
 

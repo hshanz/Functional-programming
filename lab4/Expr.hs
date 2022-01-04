@@ -150,6 +150,8 @@ simplify (Mul expr (Num 1))         = simplify expr
 simplify (Mul expr X)               = Mul (simplify expr) X
 simplify (Mul X expr)               = Mul (simplify expr) X
 simplify (Mul (Num n1) (Num n2))    = Num (eval (Mul (Num n1) (Num n2)) 1)
+simplify (Mul (Sin X) expr)         = Mul (Sin X) (simplify expr)
+simplify (Mul (Cos X) expr)         = Mul (Cos X) (simplify expr)
 simplify (Mul expr1 expr2)          = simplify (Mul (simplify expr1) (simplify expr2))
 
 

@@ -139,6 +139,8 @@ simplify (Add expr (Num 0))         = simplify expr
 simplify (Add (Num n1) (Num n2))    = Num (eval (Add (Num n1) (Num n2)) 1)
 simplify (Add expr X)               = Add (simplify expr) X
 simplify (Add X expr)               = Add (simplify expr) X
+simplify (Add (Sin X) expr)         = Add (Sin X) (simplify expr)
+simplify (Add (Cos X) expr)         = Add (Cos X) (simplify expr)
 simplify (Add expr1 expr2)          = simplify (Add (simplify expr1) (simplify expr2))
 
 simplify (Mul expr (Num 0))         = Num 0

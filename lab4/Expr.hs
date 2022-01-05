@@ -15,31 +15,31 @@ data F = Sin | Cos
     deriving (Show, Ord, Eq)
 
 num :: Double -> Expr
-num n = Num n
+num = Num
 
 x :: Expr
 x = X
 
 add :: Expr -> Expr -> Expr
-add expr1 expr2 = BinOp Add expr1 expr2
+add = BinOp Add
 
 mul :: Expr -> Expr -> Expr
-mul expr1 expr2 = BinOp Mul expr1 expr2  
+mul = BinOp Mul
 
 sin :: Expr -> Expr
-sin expr = Func Sin expr
+sin = Func Sin
 
 cos :: Expr -> Expr
-cos expr = Func Cos expr
+cos = Func Cos
 
 size :: Expr -> Int
 size X = 0
 size (Num n) = 0
-size (Func Cos expr) = size(expr) + 1
-size (Func Sin expr) = size(expr) + 1
-size expr = size expr 
+size (Func Cos expr) = size expr + 1
+size (Func Sin expr) = size expr + 1
+size expr = size expr
 
-showMul :: Expr -> String 
+showMul :: Expr -> String
 showMul (BinOp Add expr1 expr2) = "(" ++ showExpr expr1 ++ " + " ++ showExpr expr2 ++ ")"
 showMul expr = showExpr expr
 
@@ -52,24 +52,24 @@ showFunc expr = showExpr expr
 
 showExpr :: Expr -> String
 showExpr (Num n) = show n
-showExpr (BinOp Mul (BinOp Add expr1 expr2) expr)  = showMul (add expr1 expr2) ++ "*" ++showMul expr 
+showExpr (BinOp Mul (BinOp Add expr1 expr2) expr)  = showMul (add expr1 expr2) ++ "*" ++showMul expr
 showExpr (BinOp Mul expr (BinOp Add expr1 expr2))  = showMul expr ++ "*" ++ showMul (add expr1 expr2)
 showExpr (BinOp Add expr1 expr2) = showExpr expr1 ++ " + " ++ showExpr expr2
 showExpr (BinOp Mul expr1 expr2) = showMul expr1 ++ "*" ++ showExpr expr2
 
 showExpr (Func Sin expr)       = "sin " ++ showFunc expr
 showExpr (Func Cos expr)       = "cos " ++ showFunc expr
-showExpr (X)                  = "x"
+showExpr X                  = "x"
 
 evalFactor :: Expr -> Double -> Double
-evalFactor (BinOp Add expr1 expr2) d = (eval expr1 d) + (eval expr2 d)
+evalFactor (BinOp Add expr1 expr2) d = eval expr1 d + eval expr2 d
 evalFactor expr d = eval expr d
 
 eval :: Expr -> Double -> Double
 eval X d = d
 eval (Num n) d = n
-eval (BinOp Add expr1 expr2) d = (eval expr1 d) + (eval expr2 d)
-eval (BinOp Mul expr1 expr2) d = (evalFactor expr1 d) * (evalFactor expr2 d)
+eval (BinOp Add expr1 expr2) d = eval expr1 d + eval expr2 d
+eval (BinOp Mul expr1 expr2) d = evalFactor expr1 d * evalFactor expr2 d
 eval (Func Sin expr) d        = Prelude.sin (eval expr d)
 eval (Func Cos expr) d        = Prelude.cos (eval expr d)
 
@@ -81,12 +81,12 @@ funSin   =  do
             char 's'
             char 'i'
             char 'n'
-            (Func Sin) <$> factor
+            Func Sin <$> factor
 funCos  = do
             char 'c'
             char 'o'
             char 's'
-            (Func Cos) <$> factor
+            Func Cos <$> factor
 varX = do
             char 'x'
             return X
@@ -102,7 +102,7 @@ factor = Num <$> readsP
 
 readExpr :: String -> Maybe Expr
 readExpr s = Just (fst (fromJust (parse expr (filter (not.isSpace) s))))
-        
+
 prop_ShowReadExpr :: Expr -> Bool
 prop_ShowReadExpr expr = x <= 0.000001 && x >= (-0.000001)
                         where x = eval expr 1 - eval (fromJust (readExpr (showExpr expr))) 1
@@ -110,11 +110,10 @@ prop_ShowReadExpr expr = x <= 0.000001 && x >= (-0.000001)
 
 
 arbOp :: Gen Expr -> Gen Expr -> Gen Expr
-arbOp e1 e2  = do 
-                  op <- elements[Add,Mul]  
+arbOp e1 e2  = do
+                  op <- elements[Add,Mul]
                   e1' <- e1
-                  e2' <- e2
-                  return (BinOp op e1' e2')
+                  BinOp op e1' <$> e2
 arbExpr :: Int -> Gen Expr
 arbExpr i = frequency [(1,genNum),(i,arbOp (arbExpr $ i `div` 2) (arbExpr $ i `div` 2)), (i, arbFun (arbExpr $ i `div` 2))]
 
@@ -122,11 +121,10 @@ arbExpr i = frequency [(1,genNum),(i,arbOp (arbExpr $ i `div` 2) (arbExpr $ i `d
 arbFun :: Gen Expr -> Gen Expr
 arbFun e = do
             f <- elements[Cos, Sin]
-            e' <- e
-            return (Func f e')
+            Func f <$> e
 
 genNum :: Gen Expr
-genNum =  do
+genNum =
           Num <$> arbitrary
 
 instance Arbitrary Expr where
@@ -141,8 +139,14 @@ simplify (BinOp Add expr (Num 0))         = simplify expr
 simplify (BinOp Add (Num n1) (Num n2))    = Num (eval (add (Num n1) (Num n2)) 1)
 simplify (BinOp Add expr X)               = add (simplify expr) X
 simplify (BinOp Add X expr)               = add (simplify expr) X
-simplify (BinOp Add (Func f X) expr)      = add (Func f X) (simplify expr)
-simplify (BinOp Add expr1 expr2)          = simplify (add (simplify expr1) (simplify expr2))
+
+simplify (BinOp Add expr1 expr2) 
+    | expr1 == expr1' && expr2 == expr2' = add expr1 expr2
+    | expr1 == expr1' && expr2 /= expr2' = simplify (add expr1 expr2')
+    | expr1 /= expr1' && expr2 == expr2' = simplify (add expr1' expr2)
+    | otherwise = simplify (mul expr1' expr2')
+    where expr1' = simplify expr1
+          expr2' = simplify expr2
 
 simplify (BinOp Mul expr (Num 0))         = Num 0
 simplify (BinOp Mul (Num 0) expr)         = Num 0
@@ -151,14 +155,27 @@ simplify (BinOp Mul expr (Num 1))         = simplify expr
 simplify (BinOp Mul expr X)               = mul (simplify expr) X
 simplify (BinOp Mul X expr)               = mul (simplify expr) X
 simplify (BinOp Mul (Num n1) (Num n2))    = Num (eval (mul (Num n1) (Num n2)) 1)
-simplify (BinOp Mul (Func f X) expr)      = mul (Func f X) (simplify expr)
-simplify (BinOp Mul expr1 expr2)          = simplify (mul (simplify expr1) (simplify expr2))
 
+simplify (BinOp Mul expr1 expr2) 
+    | expr1 == expr1' && expr2 == expr2' = mul expr1 expr2
+    | expr1 == expr1' && expr2 /= expr2' = simplify (mul expr1 expr2')
+    | expr1 /= expr1' && expr2 == expr2' = simplify (mul expr1' expr2)
+    | otherwise = simplify (mul expr1' expr2')
+    where expr1' = simplify expr1
+          expr2' = simplify expr2
 
 simplify (Func Sin (Num n))               = Num (eval (Func Sin (Num n)) 1)
 simplify (Func Cos (Num n))               = Num (eval (Func Cos (Num n)) 1)
-simplify (Func Sin (expr))                = Func Sin (simplify expr)
-simplify (Func Cos (expr))                = Func Cos (simplify expr)
+
+simplify (Func Sin expr) 
+    | expr == expr' = Func Sin expr
+    | otherwise = Func Sin (simplify expr')
+    where expr' = simplify expr
+
+simplify (Func Cos expr) 
+    | expr == expr' = Func Cos expr
+    | otherwise = Func Cos (simplify expr')
+    where expr' = simplify expr
 
 differentiate :: Expr -> Expr
 differentiate expr = simplify (differentiate' (simplify expr))
@@ -172,16 +189,16 @@ differentiate' (BinOp Add expr1 expr2)   =  add (differentiate' expr1) (differen
 differentiate' (BinOp Mul expr1 expr2)   =  add (mul expr1 (differentiate' expr2)) (mul expr2 (differentiate' expr1))
 
 --Sin rule
-differentiate' (Func Sin expr)           =  mul (differentiate' expr) (Func Cos (expr))
+differentiate' (Func Sin expr)           =  mul (differentiate' expr) (Func Cos expr)
 
 --Cos rule
-differentiate' (Func Cos expr)           =  mul (mul (differentiate' expr) (Func Sin (expr))) (Num (-1))
+differentiate' (Func Cos expr)           =  mul (mul (differentiate' expr) (Func Sin expr)) (Num (-1))
 
 --Derivate of number is 0
 differentiate' (Num n)             = Num 0
 
 --Derivate of X is 1
-differentiate' (X)                 = Num 1
+differentiate' X                 = Num 1
 
 
 

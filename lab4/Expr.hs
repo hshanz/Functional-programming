@@ -37,7 +37,8 @@ size X = 0
 size (Num n) = 0
 size (Func Cos expr) = size expr + 1
 size (Func Sin expr) = size expr + 1
-size expr = size expr
+size (BinOp op expr1 expr2) = (size expr1) + (size expr2) + 1
+
 
 showMul :: Expr -> String
 showMul (BinOp Add expr1 expr2) = "(" ++ showExpr expr1 ++ " + " ++ showExpr expr2 ++ ")"

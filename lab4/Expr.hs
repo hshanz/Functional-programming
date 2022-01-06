@@ -137,44 +137,28 @@ simplify X = X
 simplify (BinOp Add (Num 0) expr)         = simplify expr
 simplify (BinOp Add expr (Num 0))         = simplify expr
 simplify (BinOp Add (Num n1) (Num n2))    = Num (eval (add (Num n1) (Num n2)) 1)
-simplify (BinOp Add expr X)               = add (simplify expr) X
-simplify (BinOp Add X expr)               = add (simplify expr) X
 
-simplify (BinOp Add expr1 expr2) 
-    | expr1 == expr1' && expr2 == expr2' = add expr1 expr2
-    | expr1 == expr1' && expr2 /= expr2' = simplify (add expr1 expr2')
-    | expr1 /= expr1' && expr2 == expr2' = simplify (add expr1' expr2)
-    | otherwise = simplify (mul expr1' expr2')
-    where expr1' = simplify expr1
-          expr2' = simplify expr2
 
 simplify (BinOp Mul expr (Num 0))         = Num 0
 simplify (BinOp Mul (Num 0) expr)         = Num 0
 simplify (BinOp Mul (Num 1) expr)         = simplify expr
 simplify (BinOp Mul expr (Num 1))         = simplify expr
-simplify (BinOp Mul expr X)               = mul (simplify expr) X
-simplify (BinOp Mul X expr)               = mul (simplify expr) X
 simplify (BinOp Mul (Num n1) (Num n2))    = Num (eval (mul (Num n1) (Num n2)) 1)
-
-simplify (BinOp Mul expr1 expr2) 
-    | expr1 == expr1' && expr2 == expr2' = mul expr1 expr2
-    | expr1 == expr1' && expr2 /= expr2' = simplify (mul expr1 expr2')
-    | expr1 /= expr1' && expr2 == expr2' = simplify (mul expr1' expr2)
-    | otherwise = simplify (mul expr1' expr2')
-    where expr1' = simplify expr1
-          expr2' = simplify expr2
 
 simplify (Func Sin (Num n))               = Num (eval (Func Sin (Num n)) 1)
 simplify (Func Cos (Num n))               = Num (eval (Func Cos (Num n)) 1)
 
-simplify (Func Sin expr) 
-    | expr == expr' = Func Sin expr
-    | otherwise = Func Sin (simplify expr')
-    where expr' = simplify expr
+simplify (BinOp op expr1 expr2) 
+    | expr1 == expr1' && expr2 == expr2' = BinOp op expr1 expr2
+    | expr1 == expr1' && expr2 /= expr2' = BinOp op expr1 expr2'
+    | expr1 /= expr1' && expr2 == expr2' = BinOp op expr1' expr2
+    | otherwise = simplify (BinOp op expr1' expr2')
+    where expr1' = simplify expr1
+          expr2' = simplify expr2
 
-simplify (Func Cos expr) 
-    | expr == expr' = Func Cos expr
-    | otherwise = Func Cos (simplify expr')
+simplify (Func f expr) 
+    | expr == expr' = Func f expr
+    | otherwise = Func f (simplify expr')
     where expr' = simplify expr
 
 differentiate :: Expr -> Expr

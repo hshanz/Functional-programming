@@ -61,15 +61,12 @@ showExpr (Func Sin expr)       = "sin " ++ showFunc expr
 showExpr (Func Cos expr)       = "cos " ++ showFunc expr
 showExpr X                  = "x"
 
-evalFactor :: Expr -> Double -> Double
-evalFactor (BinOp Add expr1 expr2) d = eval expr1 d + eval expr2 d
-evalFactor expr d = eval expr d
 
 eval :: Expr -> Double -> Double
 eval X d = d
 eval (Num n) d = n
 eval (BinOp Add expr1 expr2) d = eval expr1 d + eval expr2 d
-eval (BinOp Mul expr1 expr2) d = evalFactor expr1 d * evalFactor expr2 d
+eval (BinOp Mul expr1 expr2) d = eval expr1 d * eval expr2 d
 eval (Func Sin expr) d        = Prelude.sin (eval expr d)
 eval (Func Cos expr) d        = Prelude.cos (eval expr d)
 
@@ -103,9 +100,9 @@ factor = Num <$> readsP
 readExpr :: String -> Maybe Expr
 readExpr s = Just (fst (fromJust (parse expr (filter (not.isSpace) s))))
 
-prop_ShowReadExpr :: Expr -> Bool
-prop_ShowReadExpr expr = x <= 0.000001 && x >= (-0.000001)
-                        where x = eval expr 1 - eval (fromJust (readExpr (showExpr expr))) 1
+prop_ShowReadExpr :: Expr -> Double -> Bool
+prop_ShowReadExpr expr d = x <= 0.000001 && x >= (-0.000001)
+                        where x = (eval expr d) - (eval (fromJust (readExpr (showExpr expr))) d)
 
 
 
@@ -115,7 +112,7 @@ arbOp e1 e2  = do
                   e1' <- e1
                   BinOp op e1' <$> e2
 arbExpr :: Int -> Gen Expr
-arbExpr i = frequency [(1,genNum),(i,arbOp (arbExpr $ i `div` 2) (arbExpr $ i `div` 2)), (i, arbFun (arbExpr $ i `div` 2))]
+arbExpr i = frequency [((2),genNum),(i,arbOp (arbExpr $ i `div` 2) (arbExpr $ i `div` 2)), (i, arbFun (arbExpr $ i `div` 2)), ((1),genX) ]
 
 
 arbFun :: Gen Expr -> Gen Expr
@@ -126,6 +123,11 @@ arbFun e = do
 genNum :: Gen Expr
 genNum =
           Num <$> arbitrary
+genX :: Gen Expr
+genX  = do
+        (return X)
+
+
 
 instance Arbitrary Expr where
     arbitrary = sized arbExpr
@@ -145,8 +147,9 @@ simplify (BinOp Mul (Num 1) expr)         = simplify expr
 simplify (BinOp Mul expr (Num 1))         = simplify expr
 simplify (BinOp Mul (Num n1) (Num n2))    = Num (eval (mul (Num n1) (Num n2)) 1)
 
-simplify (Func Sin (Num n))               = Num (eval (Func Sin (Num n)) 1)
-simplify (Func Cos (Num n))               = Num (eval (Func Cos (Num n)) 1)
+
+simplify (Func f (Num n))               = Num (eval (Func f (Num n)) 1)
+
 
 simplify (BinOp op expr1 expr2) 
     | expr1 == expr1' && expr2 == expr2' = BinOp op expr1 expr2
@@ -170,19 +173,19 @@ differentiate' :: Expr -> Expr
 differentiate' (BinOp Add expr1 expr2)   =  add (differentiate' expr1) (differentiate' expr2)
 
 --Product Rule
-differentiate' (BinOp Mul expr1 expr2)   =  add (mul expr1 (differentiate' expr2)) (mul expr2 (differentiate' expr1))
+differentiate' (BinOp Mul expr1 expr2)   =  add (mul expr2 (differentiate' expr1)) (mul expr1 (differentiate' expr2))
 
 --Sin rule
-differentiate' (Func Sin expr)           =  mul (differentiate' expr) (Func Cos expr)
+differentiate' (Func Sin expr)           =  mul (Func Cos expr) (differentiate' expr) 
 
 --Cos rule
-differentiate' (Func Cos expr)           =  mul (mul (differentiate' expr) (Func Sin expr)) (Num (-1))
+differentiate' (Func Cos expr)           =  mul (Num (-1)) (mul (Func Sin expr) (differentiate' expr))
 
 --Derivate of number is 0
-differentiate' (Num n)             = Num 0
+differentiate' (Num n)                   = Num 0
 
 --Derivate of X is 1
-differentiate' X                 = Num 1
+differentiate' X                         = Num 1
 
 
 

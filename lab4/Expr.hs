@@ -35,8 +35,7 @@ cos = Func Cos
 size :: Expr -> Int
 size X = 0
 size (Num n) = 0
-size (Func Cos expr) = size expr + 1
-size (Func Sin expr) = size expr + 1
+size (Func f expr) = size expr + 1
 size (BinOp op expr1 expr2) = (size expr1) + (size expr2) + 1
 
 
